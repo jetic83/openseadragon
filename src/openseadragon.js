@@ -353,7 +353,7 @@
   * @property {Boolean} [gestureSettingsPen.dblClickToZoom=false] - Zoom on double-click gesture. Note: If set to true
   *     then clickToZoom should be set to false to prevent multiple zooms.
   * @property {Boolean} [gestureSettingsPen.pinchToZoom=false] - Zoom on pinch gesture
-  * @property {Boolean} [gestureSettingsPan.zoomToRefPoint=true] - If zoomToRefPoint is true, the zoom is centered at the pointer position. Otherwise,
+  * @property {Boolean} [gestureSettingsPen.zoomToRefPoint=true] - If zoomToRefPoint is true, the zoom is centered at the pointer position. Otherwise,
   *     the zoom is centered at the canvas center.
   * @property {Boolean} [gestureSettingsPen.flickEnabled=false] - Enable flick gesture
   * @property {Number} [gestureSettingsPen.flickMinSpeed=120] - If flickEnabled is true, the minimum speed to initiate a flick gesture (pixels-per-second)
@@ -735,7 +735,7 @@
   *
   */
 
-
+/* eslint-disable no-redeclare */
 function OpenSeadragon( options ){
     return new OpenSeadragon.Viewer( options );
 }
@@ -1333,7 +1333,7 @@ function OpenSeadragon( options ){
          * @returns {Element} The element with the given id, null, or the element itself.
          */
         getElement: function( element ) {
-            if ( typeof ( element ) == "string" ) {
+            if ( typeof ( element ) === "string" ) {
                 element = document.getElementById( element );
             }
             return element;
@@ -1352,7 +1352,7 @@ function OpenSeadragon( options ){
                 offsetParent;
 
             element      = $.getElement( element );
-            isFixed      = $.getElementStyle( element ).position == "fixed";
+            isFixed      = $.getElementStyle( element ).position === "fixed";
             offsetParent = getOffsetParent( element, isFixed );
 
             while ( offsetParent ) {
@@ -1365,7 +1365,7 @@ function OpenSeadragon( options ){
                 }
 
                 element = offsetParent;
-                isFixed = $.getElementStyle( element ).position == "fixed";
+                isFixed = $.getElementStyle( element ).position === "fixed";
                 offsetParent = getOffsetParent( element, isFixed );
             }
 
@@ -1397,7 +1397,7 @@ function OpenSeadragon( options ){
                 boundingRect = element.getBoundingClientRect();
             }
 
-            win = ( doc == doc.window ) ?
+            win = ( doc === doc.window ) ?
                 doc :
                 ( doc.nodeType === 9 ) ?
                     doc.defaultView || doc.parentWindow :
@@ -1548,7 +1548,7 @@ function OpenSeadragon( options ){
          */
         getMousePosition: function( event ) {
 
-            if ( typeof ( event.pageX ) == "number" ) {
+            if ( typeof ( event.pageX ) === "number" ) {
                 $.getMousePosition = function( event ){
                     var result = new $.Point();
 
@@ -1558,7 +1558,7 @@ function OpenSeadragon( options ){
 
                     return result;
                 };
-            } else if ( typeof ( event.clientX ) == "number" ) {
+            } else if ( typeof ( event.clientX ) === "number" ) {
                 $.getMousePosition = function( event ){
                     var result = new $.Point();
 
@@ -1593,7 +1593,7 @@ function OpenSeadragon( options ){
             var docElement  = document.documentElement || {},
                 body        = document.body || {};
 
-            if ( typeof ( window.pageXOffset ) == "number" ) {
+            if ( typeof ( window.pageXOffset ) === "number" ) {
                 $.getPageScroll = function(){
                     return new $.Point(
                         window.pageXOffset,
@@ -1670,7 +1670,7 @@ function OpenSeadragon( options ){
                 };
             }
 
-            return $.setPageScroll( scroll );
+            $.setPageScroll( scroll );
         },
 
         /**
@@ -1682,7 +1682,7 @@ function OpenSeadragon( options ){
             var docElement = document.documentElement || {},
                 body    = document.body || {};
 
-            if ( typeof ( window.innerWidth ) == 'number' ) {
+            if ( typeof ( window.innerWidth ) === 'number' ) {
                 $.getWindowSize = function(){
                     return new $.Point(
                         window.innerWidth,
@@ -1814,7 +1814,7 @@ function OpenSeadragon( options ){
                 return img;
             };
 
-            if ( $.Browser.vendor == $.BROWSERS.IE && $.Browser.version < 7 ) {
+            if ( $.Browser.vendor === $.BROWSERS.IE && $.Browser.version < 7 ) {
 
                 $.makeTransparentImage = function( src ){
                     var img     = $.makeNeutralElement( "img" ),
@@ -2227,7 +2227,7 @@ function OpenSeadragon( options ){
 
             request.onreadystatechange = function() {
                 // 4 = DONE (https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest#Properties)
-                if ( request.readyState == 4 ) {
+                if ( request.readyState === 4 ) {
                     request.onreadystatechange = function(){};
 
                     // With protocols other than http/https, a successful request status is in
@@ -2256,7 +2256,7 @@ function OpenSeadragon( options ){
 
                 if (headers) {
                     for (var headerName in headers) {
-                        if (headers.hasOwnProperty(headerName) && headers[headerName]) {
+                        if (Object.prototype.hasOwnProperty.call(headers, headerName) && headers[headerName]) {
                             request.setRequestHeader(headerName, headers[headerName]);
                         }
                     }
@@ -2281,8 +2281,8 @@ function OpenSeadragon( options ){
                     to point developers in the right direction. We test the exception number because IE's
                     error messages are localized.
                 */
-                var oldIE = $.Browser.vendor == $.BROWSERS.IE && $.Browser.version < 10;
-                if ( oldIE && typeof ( e.number ) != "undefined" && e.number == -2147024891 ) {
+                var oldIE = $.Browser.vendor === $.BROWSERS.IE && $.Browser.version < 10;
+                if ( oldIE && typeof ( e.number ) !== "undefined" && e.number === -2147024891 ) {
                     msg += "\nSee http://msdn.microsoft.com/en-us/library/ms537505(v=vs.85).aspx#xdomain";
                 }
 
@@ -2291,7 +2291,7 @@ function OpenSeadragon( options ){
                 request.onreadystatechange = function(){};
 
                 if (window.XDomainRequest) { // IE9 or IE8 might as well try to use XDomainRequest
-                    var xdr = new XDomainRequest();
+                    var xdr = new window.XDomainRequest();
                     if (xdr) {
                         xdr.onload = function (e) {
                             if ( $.isFunction( onSuccess ) ) {
@@ -2353,7 +2353,7 @@ function OpenSeadragon( options ){
                 callbackParam = options.param || 'callback',
                 callback      = options.callback;
 
-            url = url.replace( /(\=)\?(&|$)|\?\?/i, replace );
+            url = url.replace( /(=)\?(&|$)|\?\?/i, replace );
             // Add callback manually
             url += (/\?/.test( url ) ? "&" : "?") + callbackParam + "=" + jsonpCallback;
 
@@ -2491,6 +2491,31 @@ function OpenSeadragon( options ){
     });
 
 
+    //TODO: $.console is often used inside a try/catch block which generally
+    //      prevents allowings errors to occur with detection until a debugger
+    //      is attached.  Although I've been guilty of the same anti-pattern
+    //      I eventually was convinced that errors should naturally propagate in
+    //      all but the most special cases.
+    /**
+     * A convenient alias for console when available, and a simple null
+     * function when console is unavailable.
+     * @static
+     * @private
+     */
+    var nullfunction = function( msg ){
+        //document.location.hash = msg;
+    };
+
+    $.console = window.console || {
+        log:    nullfunction,
+        debug:  nullfunction,
+        info:   nullfunction,
+        warn:   nullfunction,
+        error:  nullfunction,
+        assert: nullfunction
+    };
+
+
     /**
      * The current browser vendor, version, and related information regarding detected features.
      * @member {Object} Browser
@@ -2509,12 +2534,12 @@ function OpenSeadragon( options ){
 
 
     var FILEFORMATS = {
-            "bmp":  false,
-            "jpeg": true,
-            "jpg":  true,
-            "png":  true,
-            "tif":  false,
-            "wdp":  false
+            bmp:  false,
+            jpeg: true,
+            jpg:  true,
+            png:  true,
+            tif:  false,
+            wdp:  false
         },
         URLPARAMS = {};
 
@@ -2586,54 +2611,34 @@ function OpenSeadragon( options ){
             sep  = part.indexOf( '=' );
 
             if ( sep > 0 ) {
-                URLPARAMS[ part.substring( 0, sep ) ] =
-                    decodeURIComponent( part.substring( sep + 1 ) );
+                var key = part.substring( 0, sep ),
+                    value = part.substring( sep + 1 );
+                try {
+                    URLPARAMS[ key ] = decodeURIComponent( value );
+                } catch (e) {
+                    $.console.error( "Ignoring malformed URL parameter: %s=%s", key, value );
+                }
             }
         }
 
         //determine if this browser supports image alpha transparency
         $.Browser.alpha = !(
             (
-                $.Browser.vendor == $.BROWSERS.IE &&
+                $.Browser.vendor === $.BROWSERS.IE &&
                 $.Browser.version < 9
             ) || (
-                $.Browser.vendor == $.BROWSERS.CHROME &&
+                $.Browser.vendor === $.BROWSERS.CHROME &&
                 $.Browser.version < 2
             )
         );
 
         //determine if this browser supports element.style.opacity
         $.Browser.opacity = !(
-            $.Browser.vendor == $.BROWSERS.IE &&
+            $.Browser.vendor === $.BROWSERS.IE &&
             $.Browser.version < 9
         );
 
     })();
-
-
-    //TODO: $.console is often used inside a try/catch block which generally
-    //      prevents allowings errors to occur with detection until a debugger
-    //      is attached.  Although I've been guilty of the same anti-pattern
-    //      I eventually was convinced that errors should naturally propagate in
-    //      all but the most special cases.
-    /**
-     * A convenient alias for console when available, and a simple null
-     * function when console is unavailable.
-     * @static
-     * @private
-     */
-    var nullfunction = function( msg ){
-            //document.location.hash = msg;
-        };
-
-    $.console = window.console || {
-        log:    nullfunction,
-        debug:  nullfunction,
-        info:   nullfunction,
-        warn:   nullfunction,
-        error:  nullfunction,
-        assert: nullfunction
-    };
 
 
     // Adding support for HTML5's requestAnimationFrame as suggested by acdha.
@@ -2731,7 +2736,7 @@ function OpenSeadragon( options ){
      * @returns {Element}
      */
     function getOffsetParent( element, isFixed ) {
-        if ( isFixed && element != document.body ) {
+        if ( isFixed && element !== document.body ) {
             return document.body;
         } else {
             return element.offsetParent;

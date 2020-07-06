@@ -158,7 +158,7 @@ $.Button = function( options ) {
         this.imgDown.style.visibility  =
             "hidden";
 
-        if ($.Browser.vendor == $.BROWSERS.FIREFOX && $.Browser.version < 3) {
+        if ($.Browser.vendor === $.BROWSERS.FIREFOX && $.Browser.version < 3) {
             this.imgGroup.style.top =
             this.imgHover.style.top =
             this.imgDown.style.top  =
@@ -396,6 +396,20 @@ $.extend( $.Button.prototype, $.EventSource.prototype, /** @lends OpenSeadragon.
         this.element.disabled = false;
         $.setElementOpacity( this.element, 1.0, true );
         this.notifyGroupEnter();
+    },
+
+    destroy: function() {
+        this.element.removeChild(this.imgRest);
+        this.imgRest = null;
+        this.element.removeChild(this.imgGroup);
+        this.imgGroup = null;
+        this.element.removeChild(this.imgHover);
+        this.imgHover = null;
+        this.element.removeChild(this.imgDown);
+        this.imgDown = null;
+        this.removeAllHandlers();
+        this.tracker.destroy();
+        this.element = null;
     }
 
 });
@@ -451,13 +465,13 @@ function inTo( button, newState ) {
     }
 
     if ( newState >= $.ButtonState.GROUP &&
-         button.currentState == $.ButtonState.REST ) {
+         button.currentState === $.ButtonState.REST ) {
         stopFading( button );
         button.currentState = $.ButtonState.GROUP;
     }
 
     if ( newState >= $.ButtonState.HOVER &&
-         button.currentState == $.ButtonState.GROUP ) {
+         button.currentState === $.ButtonState.GROUP ) {
         if( button.imgHover ){
             button.imgHover.style.visibility = "";
         }
@@ -465,7 +479,7 @@ function inTo( button, newState ) {
     }
 
     if ( newState >= $.ButtonState.DOWN &&
-         button.currentState == $.ButtonState.HOVER ) {
+         button.currentState === $.ButtonState.HOVER ) {
         if( button.imgDown ){
             button.imgDown.style.visibility = "";
         }
@@ -481,7 +495,7 @@ function outTo( button, newState ) {
     }
 
     if ( newState <= $.ButtonState.HOVER &&
-         button.currentState == $.ButtonState.DOWN ) {
+         button.currentState === $.ButtonState.DOWN ) {
         if( button.imgDown ){
             button.imgDown.style.visibility = "hidden";
         }
@@ -489,7 +503,7 @@ function outTo( button, newState ) {
     }
 
     if ( newState <= $.ButtonState.GROUP &&
-         button.currentState == $.ButtonState.HOVER ) {
+         button.currentState === $.ButtonState.HOVER ) {
         if( button.imgHover ){
             button.imgHover.style.visibility = "hidden";
         }
@@ -497,7 +511,7 @@ function outTo( button, newState ) {
     }
 
     if ( newState <= $.ButtonState.REST &&
-         button.currentState == $.ButtonState.GROUP ) {
+         button.currentState === $.ButtonState.GROUP ) {
         beginFading( button );
         button.currentState = $.ButtonState.REST;
     }

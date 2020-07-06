@@ -326,6 +326,10 @@ $.extend($.TiledImage.prototype, $.EventSource.prototype, /** @lends OpenSeadrag
      */
     destroy: function() {
         this.reset();
+
+        if (this.source.destroy) {
+            this.source.destroy();
+        }
     },
 
     /**
@@ -672,6 +676,58 @@ $.extend($.TiledImage.prototype, $.EventSource.prototype, /** @lends OpenSeadrag
      */
     setHeight: function(height, immediately) {
         this._setScale(height / this.normHeight, immediately);
+    },
+
+    /**
+     * Sets an array of polygons to crop the TiledImage during draw tiles.
+     * The render function will use the default non-zero winding rule.
+     * @param {OpenSeadragon.Point[][]} polygons - represented in an array of point object in image coordinates.
+     * Example format: [
+     *  [{x: 197, y:172}, {x: 226, y:172}, {x: 226, y:198}, {x: 197, y:198}], // First polygon
+     *  [{x: 328, y:200}, {x: 330, y:199}, {x: 332, y:201}, {x: 329, y:202}]  // Second polygon
+     *  [{x: 321, y:201}, {x: 356, y:205}, {x: 341, y:250}] // Third polygon
+     * ]
+     */
+    setCroppingPolygons: function( polygons ) {
+
+        var isXYObject = function(obj) {
+            return obj instanceof $.Point || (typeof obj.x === 'number' && typeof obj.y === 'number');
+        };
+
+        var objectToSimpleXYObject = function(objs) {
+            return objs.map(function(obj) {
+                try {
+                    if (isXYObject(obj)) {
+                        return { x: obj.x, y: obj.y };
+                    } else {
+                        throw new Error();
+                    }
+                } catch(e) {
+                    throw new Error('A Provided cropping polygon point is not supported');
+                }
+            });
+        };
+
+        try {
+            if (!$.isArray(polygons)) {
+                throw new Error('Provided cropping polygon is not an array');
+            }
+            this._croppingPolygons = polygons.map(function(polygon){
+                return objectToSimpleXYObject(polygon);
+            });
+        } catch (e) {
+            $.console.error('[TiledImage.setCroppingPolygons] Cropping polygon format not supported');
+            $.console.error(e);
+            this._croppingPolygons = null;
+        }
+    },
+
+    /**
+     * Resets the cropping polygons, thus next render will remove all cropping
+     * polygon effects.
+     */
+    resetCroppingPolygons: function() {
+        this._croppingPolygons = null;
     },
 
     /**
@@ -1573,7 +1629,7 @@ function setTileLoaded(tiledImage, tile, image, cutoff, tileRequest) {
      * @property {Image} image - The image of the tile.
      * @property {OpenSeadragon.TiledImage} tiledImage - The tiled image of the loaded tile.
      * @property {OpenSeadragon.Tile} tile - The tile which has been loaded.
-     * @property {XMLHttpRequest} tiledImage - The AJAX request that loaded this tile (if applicable).
+     * @property {XMLHttpRequest} tileRequest - The AJAX request that loaded this tile (if applicable).
      * @property {function} getCompletionCallback - A function giving a callback to call
      * when the asynchronous processing of the image is done. The image will be
      * marked as entirely loaded when the callback has been called once for each
@@ -1714,10 +1770,10 @@ function providesCoverage( coverage, level, x, y ) {
     if ( x === undefined || y === undefined ) {
         rows = coverage[ level ];
         for ( i in rows ) {
-            if ( rows.hasOwnProperty( i ) ) {
+            if ( Object.prototype.hasOwnProperty.call( rows, i ) ) {
                 cols = rows[ i ];
                 for ( j in cols ) {
-                    if ( cols.hasOwnProperty( j ) && !cols[ j ] ) {
+                    if ( Object.prototype.hasOwnProperty.call( cols, j ) && !cols[ j ] ) {
                         return false;
                     }
                 }
@@ -1818,7 +1874,7 @@ function compareTiles( previousBest, tile ) {
 
     if ( tile.visibility > previousBest.visibility ) {
         return tile;
-    } else if ( tile.visibility == previousBest.visibility ) {
+    } else if ( tile.visibility === previousBest.visibility ) {
         if ( tile.squaredDistance < previousBest.squaredDistance ) {
             return tile;
         }
@@ -1877,14 +1933,15 @@ function drawTiles( tiledImage, lastDrawn ) {
             // sketch canvas we are going to use for performance reasons.
             bounds = tiledImage.viewport.viewportToViewerElementRectangle(
                 tiledImage.getClippedBounds(true))
-                .getIntegerBoundingBox()
-                .times($.pixelDensityRatio);
+                .getIntegerBoundingBox();
 
             if(tiledImage._drawer.viewer.viewport.getFlip()) {
               if (tiledImage.viewport.degrees !== 0 || tiledImage.getRotation(true) % 360 !== 0){
                 bounds.x = tiledImage._drawer.viewer.container.clientWidth - (bounds.x + bounds.width);
               }
             }
+
+            bounds = bounds.times($.pixelDensityRatio);
         }
         tiledImage._drawer._clear(true, bounds);
     }
@@ -1929,6 +1986,28 @@ function drawTiles( tiledImage, lastDrawn ) {
         }
         tiledImage._drawer.setClip(clipRect, useSketch);
 
+        usedClip = true;
+    }
+
+    if (tiledImage._croppingPolygons) {
+        tiledImage._drawer.saveContext(useSketch);
+        try {
+            var polygons = tiledImage._croppingPolygons.map(function (polygon) {
+                return polygon.map(function (coord) {
+                    var point = tiledImage
+                        .imageToViewportCoordinates(coord.x, coord.y, true)
+                        .rotate(-tiledImage.getRotation(true), tiledImage._getRotationPoint(true));
+                    var clipPoint = tiledImage._drawer.viewportCoordToDrawerCoord(point);
+                    if (sketchScale) {
+                        clipPoint = clipPoint.times(sketchScale);
+                    }
+                    return clipPoint;
+                });
+            });
+            tiledImage._drawer.clipWithPolygons(polygons, useSketch);
+        } catch (e) {
+            $.console.error(e);
+        }
         usedClip = true;
     }
 

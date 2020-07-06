@@ -997,7 +997,7 @@
     /**
      * Detect available mouse wheel event name.
      */
-    $.MouseTracker.wheelEventName = ( $.Browser.vendor == $.BROWSERS.IE && $.Browser.version > 8 ) ||
+    $.MouseTracker.wheelEventName = ( $.Browser.vendor === $.BROWSERS.IE && $.Browser.version > 8 ) ||
                                                 ( 'onwheel' in document.createElement( 'div' ) ) ? 'wheel' : // Modern browsers support 'wheel'
                                     document.onmousewheel !== undefined ? 'mousewheel' :                     // Webkit and IE support at least 'mousewheel'
                                     'DOMMouseScroll';                                                        // Assume old Firefox
@@ -1015,7 +1015,7 @@
      */
     $.MouseTracker.subscribeEvents = [ "click", "dblclick", "keydown", "keyup", "keypress", "focus", "blur", $.MouseTracker.wheelEventName ];
 
-    if( $.MouseTracker.wheelEventName == "DOMMouseScroll" ) {
+    if( $.MouseTracker.wheelEventName === "DOMMouseScroll" ) {
         // Older Firefox
         $.MouseTracker.subscribeEvents.push( "MozMousePixelScroll" );
     }
@@ -1760,13 +1760,13 @@
             clientY:    event.clientY,
             pageX:      event.pageX ? event.pageX : event.clientX,
             pageY:      event.pageY ? event.pageY : event.clientY,
-            deltaMode:  event.type == "MozMousePixelScroll" ? 0 : 1, // 0=pixel, 1=line, 2=page
+            deltaMode:  event.type === "MozMousePixelScroll" ? 0 : 1, // 0=pixel, 1=line, 2=page
             deltaX:     0,
             deltaZ:     0
         };
 
         // Calculate deltaY
-        if ( $.MouseTracker.wheelEventName == "mousewheel" ) {
+        if ( $.MouseTracker.wheelEventName === "mousewheel" ) {
             simulatedEvent.deltaY = -event.wheelDelta / $.DEFAULT_SETTINGS.pixelsPerWheelLine;
         } else {
             simulatedEvent.deltaY = event.detail;
@@ -2499,7 +2499,7 @@
 
         // If isPrimary is not known for the pointer then set it according to our rules:
         //    true if the first pointer in the gesture, otherwise false
-        if ( !gPoint.hasOwnProperty( 'isPrimary' ) ) {
+        if ( !Object.prototype.hasOwnProperty.call( gPoint, 'isPrimary' ) ) {
             if ( pointsList.getLength() === 0 ) {
                 gPoint.isPrimary = true;
             } else {
@@ -2535,7 +2535,7 @@
             listLength = pointsList.removeById( gPoint.id );
 
             // If isPrimary is not known for the pointer and we just removed the primary pointer from the list then we need to set another pointer as primary
-            if ( !gPoint.hasOwnProperty( 'isPrimary' ) ) {
+            if ( !Object.prototype.hasOwnProperty.call( gPoint, 'isPrimary' ) ) {
                 primaryPoint = pointsList.getPrimary();
                 if ( !primaryPoint ) {
                     primaryPoint = pointsList.getByIndex( 0 );
@@ -2661,7 +2661,7 @@
                     {
                         eventSource:          tracker,
                         pointerType:          curGPoint.type,
-                        position:             getPointRelativeToAbsolute( curGPoint.currentPos, tracker.element ),
+                        position:             curGPoint.currentPos && getPointRelativeToAbsolute( curGPoint.currentPos, tracker.element ),
                         buttons:              pointsList.buttons,
                         pointers:             tracker.getActivePointerCount(),
                         insideElementPressed: updateGPoint ? updateGPoint.insideElementPressed : false,
@@ -2958,10 +2958,16 @@
             return false;
         }
 
+        // OS-specific gestures (e.g. swipe up with four fingers in iPadOS 13)
+        if (typeof gPoints[ 0 ].currentPos === "undefined") {
+            abortContacts(tracker, event, pointsList);
+
+            return false;
+        }
+
         for ( i = 0; i < gPointCount; i++ ) {
             curGPoint = gPoints[ i ];
             updateGPoint = pointsList.getById( curGPoint.id );
-
             if ( updateGPoint ) {
                 // Update the pointer, stop tracking it if not still in this element
                 if ( updateGPoint.captured ) {
@@ -3166,7 +3172,7 @@
 
             if ( updateGPoint ) {
                 // Already tracking the pointer...update it
-                if ( curGPoint.hasOwnProperty( 'isPrimary' ) ) {
+                if ( Object.prototype.hasOwnProperty.call( curGPoint, 'isPrimary' ) ) {
                     updateGPoint.isPrimary = curGPoint.isPrimary;
                 }
                 updateGPoint.lastPos = updateGPoint.currentPos;
@@ -3278,7 +3284,7 @@
             // Pinch
             if ( tracker.pinchHandler && gPoints[ 0 ].type === 'touch' ) {
                 delta = delegate.pinchGPoints[ 0 ].currentPos.distanceTo( delegate.pinchGPoints[ 1 ].currentPos );
-                if ( delta != delegate.currentPinchDist ) {
+                if ( delta !== delegate.currentPinchDist ) {
                     delegate.lastPinchDist = delegate.currentPinchDist;
                     delegate.currentPinchDist = delta;
                     delegate.lastPinchCenter = delegate.currentPinchCenter;
