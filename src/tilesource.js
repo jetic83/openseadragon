@@ -585,6 +585,23 @@ $.TileSource.prototype = {
     },
 
     /**
+     * Responsible for retrieving the SignalR Hub which will be attached to the image request for the
+     * region specified by the given x, y, and level components.
+     * This option is only relevant if {@link OpenSeadragon.Options}.loadTilesWithSignalR is set to true.
+     * The hub returned here will override the hub specified at the Viewer or TiledImage level.
+     * Specifying a falsy value for a hub will clear its existing value set at the Viewer or
+     * TiledImage level (if any).
+     * @function
+     * @param {Number} level
+     * @param {Number} x
+     * @param {Number} y
+     * @returns {Object}
+     */
+    getTileSignalRHub: function( level, x, y ) {
+        return $.DEFAULT_SETTINGS.signalRHub;
+    },
+
+    /**
      * Responsible for retrieving the headers which will be attached to the image request for the
      * region specified by the given x, y, and level components.
      * This option is only relevant if {@link OpenSeadragon.Options}.loadTilesWithAjax is set to true.

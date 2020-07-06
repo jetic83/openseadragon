@@ -672,6 +672,35 @@ $.extend( $.Viewer.prototype, $.EventSource.prototype, $.ControlDock.prototype, 
             _this.addTiledImage(options);
         };
 
+        if (_this.loadTilesWithSignalR) {
+            // If no signalRHub is given, take the default.
+            _this.signalRHub = _this.signalRHub || $.DEFAULT_SETTINGS.signalRHub;
+
+            // If a signalRHub is given in the OSD options as a string,
+            // interpret the string as the Hub class name on the server,
+            // and create a basic SignalR hub proxy out of it.
+            if (typeof _this.signalRHub === "string") {
+                if (window.$.connection.hasOwnProperty(_this.signalRHub)) {
+                    _this.signalRHub = window.$.connection[_this.signalRHub];
+                }
+                // If the string was not a valid hub name, throw an error.
+                else {
+                    throw new Error("A SignalR hub proxy named '" + _this.signalRHub + "' could not be found. " +
+                        "Possible reasons: No Hub class with this name defined on the server, or letter case mismatch (javascript: case sensitive, but first letter lower case (camelCase)).");
+                }
+
+                // There must be at least one client function be defined
+                // before calling hub.start() - see note to
+                // https://docs.microsoft.com/en-us/aspnet/signalr/overview/guide-to-the-api/hubs-api-guide-javascript-client#establishconnection
+                _this.signalRHub.client.oSDSignalRConsoleLog = function (text) {
+                    $.console.log(text);
+                };
+
+                // SignalR logging will log all connection issues if enabled.
+                window.$.connection.hub.logging = this.debugMode;
+            }
+        }
+
         // TileSources
         for (var i = 0; i < tileSources.length; i++) {
             doOne(tileSources[i]);
@@ -706,6 +735,10 @@ $.extend( $.Viewer.prototype, $.EventSource.prototype, $.ControlDock.prototype, 
         THIS[ this.hash ].animating = false;
         this.world.removeAll();
         this.imageLoader.clear();
+
+        if (this.loadTilesWithSignalR) {
+            window.$.connection.hub.stop();
+        }
 
         /**
          * Raised when the viewer is closed (see {@link OpenSeadragon.Viewer#close}).
@@ -897,6 +930,10 @@ $.extend( $.Viewer.prototype, $.EventSource.prototype, $.ControlDock.prototype, 
 
         for (var i = 0; i < this.world.getItemCount(); i++) {
             this.world.getItemAt(i).debugMode = debugMode;
+        }
+
+        if (this.loadTilesWithSignalR) {
+            window.$.connection.hub.logging = debugMode;
         }
 
         this.debugMode = debugMode;
@@ -1303,6 +1340,18 @@ $.extend( $.Viewer.prototype, $.EventSource.prototype, $.ControlDock.prototype, 
      *      Note that these headers will be merged over any headers specified in {@link OpenSeadragon.Options}.
      *      Specifying a falsy value for a header will clear its existing value set at the Viewer level (if any).
      * requests.
+     * @param {Boolean} [options.loadTilesWithSignalR]
+     *      Whether to load tile data using SignalR.
+     *      Defaults to the setting in {@link OpenSeadragon.Options}.
+     * @param {String|Object} [options.signalRHub]
+     *      A SignalR hub to include when making tile requests.
+     *      Note that this hub will be merged over any hub specified in {@link OpenSeadragon.Options}.
+     *      Specifying a falsy value for a hub will clear its existing value set at the Viewer level (if any).
+     * @param {Boolean} [options.loadTilesWithMultiServer]
+     *      Whether to load tile data using multiple (load balancing) servers.
+     *      Defaults to the setting in {@link OpenSeadragon.Options}.
+     * @param {Object} [options.multiServer]
+     *      A set of servers to include when loading the tiles.
      * @param {Function} [options.success] A function that gets called when the image is
      * successfully added. It's passed the event object which contains a single property:
      * "item", which is the resulting instance of TiledImage.
@@ -1354,6 +1403,18 @@ $.extend( $.Viewer.prototype, $.EventSource.prototype, $.ControlDock.prototype, 
             options.ajaxHeaders = this.ajaxHeaders;
         } else if ($.isPlainObject(options.ajaxHeaders) && $.isPlainObject(this.ajaxHeaders)) {
             options.ajaxHeaders = $.extend({}, this.ajaxHeaders, options.ajaxHeaders);
+        }
+        if (options.loadTilesWithSignalR === undefined) {
+            options.loadTilesWithSignalR = this.loadTilesWithSignalR;
+        }
+        if (options.signalRHub === undefined || options.signalRHub === null) {
+            options.signalRHub = this.signalRHub;
+        }
+        if (options.loadTilesWithMultiServers === undefined) {
+            options.loadTilesWithMultiServers = this.loadTilesWithMultiServers;
+        }
+        if (options.multiServers === undefined || options.multiServers === null) {
+            options.multiServers = this.multiServers;
         }
 
         var myQueueItem = {
@@ -1469,6 +1530,10 @@ $.extend( $.Viewer.prototype, $.EventSource.prototype, $.ControlDock.prototype, 
                     ajaxWithCredentials: queueItem.options.ajaxWithCredentials,
                     loadTilesWithAjax: queueItem.options.loadTilesWithAjax,
                     ajaxHeaders: queueItem.options.ajaxHeaders,
+                    loadTilesWithSignalR: queueItem.options.loadTilesWithSignalR,
+                    signalRHub: queueItem.options.signalRHub,
+                    loadTilesWithMultiServers: queueItem.options.loadTilesWithMultiServers,
+                    multiServers: queueItem.options.multiServers,
                     debugMode: _this.debugMode
                 });
 

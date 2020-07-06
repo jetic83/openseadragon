@@ -82,6 +82,16 @@
  *      Defaults to the setting in {@link OpenSeadragon.Options}.
  * @param {Object} [options.ajaxHeaders={}]
  *      A set of headers to include when making tile AJAX requests.
+ * @param {Boolean} [loadTilesWithSignalR=false]
+ *      Whether to load tile data using SignalR.
+ *      Defaults to the setting in {@link OpenSeadragon.Options}.
+ * @param {String|Object} [signalRHub='oSDHub']
+ *      A signalR Hub (or name of a hub) which is used to load tile sources or tiles.
+ * @param {Boolean} [options.loadTilesWithMultiServers]
+ *      Whether to load tile data using multiple servers.
+ *      Defaults to the setting in {@link OpenSeadragon.Options}.
+ * @param {Object} [options.multiServers=[]]
+ *      A set of servers to include when balancing tile loading.
  */
 $.TiledImage = function( options ) {
     var _this = this;
@@ -1011,25 +1021,38 @@ $.extend($.TiledImage.prototype, $.EventSource.prototype, /** @lends OpenSeadrag
     },
 
     // private
-    _getLevelsInterval: function() {
-        var lowestLevel = Math.max(
-            this.source.minLevel,
-            Math.floor(Math.log(this.minZoomImageRatio) / Math.log(2))
-        );
+    _getLevelsInterval: function () {
         var currentZeroRatio = this.viewport.deltaPixelsFromPointsNoRotate(
             this.source.getPixelRatio(0), true).x *
             this._scaleSpring.current.value;
         var highestLevel = Math.min(
             Math.abs(this.source.maxLevel),
             Math.abs(Math.floor(
-                Math.log(currentZeroRatio / this.minPixelRatio) / Math.log(2)
-            ))
+                // substract 1 to have a lower highestLevel
+                Math.max(0, Math.log(Math.max(0.000000000000000000001, (currentZeroRatio / this.minPixelRatio) - 1))) / Math.log(2))
+            )
         );
+
+        var lowestLevel;
+        // for immediate rendering, ignore all smaller levels (no pyramid loading),
+        // but directly render the correct level.
+        if (this.immediateRender) {
+            lowestLevel = highestLevel;
+        } else {
+            lowestLevel = Math.max(
+                this.source.minLevel,
+                Math.floor(Math.log(this.minZoomImageRatio) / Math.log(2))
+            );
+            // Calculations for the interval of levels to draw
+            // can return invalid intervals; fix that here if necessary
+            lowestLevel = Math.min(lowestLevel, highestLevel);
+        }
 
         // Calculations for the interval of levels to draw
         // can return invalid intervals; fix that here if necessary
         highestLevel = Math.max(highestLevel, this.source.minLevel || 0);
         lowestLevel = Math.min(lowestLevel, highestLevel);
+
         return {
             lowestLevel: lowestLevel,
             highestLevel: highestLevel
@@ -1436,7 +1459,9 @@ function getTile(
         sourceBounds,
         exists,
         url,
+        signalRHub,
         ajaxHeaders,
+        multiServers,
         context2D,
         tile;
 
@@ -1455,6 +1480,12 @@ function getTile(
         exists  = tileSource.tileExists( level, xMod, yMod );
         url     = tileSource.getTileUrl( level, xMod, yMod );
 
+        // A SignalR Hub is only applicable if loadTilesWithSignalR is set
+        if (tiledImage.loadTilesWithSignalR) {
+            signalRHub = tiledImage.signalRHub; //tileSource.getTileSignalRHub(level, xMod, yMod);
+        } else {
+            signalRHub = null;
+        }
         // Headers are only applicable if loadTilesWithAjax is set
         if (tiledImage.loadTilesWithAjax) {
             ajaxHeaders = tileSource.getTileAjaxHeaders( level, xMod, yMod );
@@ -1464,6 +1495,12 @@ function getTile(
             }
         } else {
             ajaxHeaders = null;
+        }
+        // A list of multiple servers is only applicable if loadTilesWithMultiServers is set
+        if (tiledImage.loadTilesWithMultiServers) {
+            multiServers = tiledImage.multiServers;
+        } else {
+            multiServers = null;
         }
 
         context2D = tileSource.getContext2D ?
@@ -1480,8 +1517,12 @@ function getTile(
             exists,
             url,
             context2D,
+            tiledImage.loadTilesWithSignalR,
+            signalRHub,
             tiledImage.loadTilesWithAjax,
             ajaxHeaders,
+            tiledImage.loadTilesWithMultiServers,
+            multiServers,
             sourceBounds
         );
 
@@ -1513,9 +1554,14 @@ function getTile(
 function loadTile( tiledImage, tile, time ) {
     tile.loading = true;
     tiledImage._imageLoader.addJob({
+        tiledImage: tiledImage,
         src: tile.url,
+        loadWithSignalR: tile.loadWithSignalR,
+        signalRHub: tile.signalRHub,
         loadWithAjax: tile.loadWithAjax,
         ajaxHeaders: tile.ajaxHeaders,
+        loadWithMultiServers: tile.loadWithMultiServers,
+        multiServers: tile.multiServers,
         crossOriginPolicy: tiledImage.crossOriginPolicy,
         ajaxWithCredentials: tiledImage.ajaxWithCredentials,
         callback: function( image, errorMsg, tileRequest ){
@@ -1675,10 +1721,6 @@ function positionTile( tile, overlap, viewport, viewportCenter, levelVisibility,
         sizeT = viewport.deltaPixelsFromPointsNoRotate(boundsSize, false),
         tileCenter = positionT.plus( sizeT.divide( 2 ) ),
         tileSquaredDistance = viewportCenter.squaredDistanceTo( tileCenter );
-
-    if ( !overlap ) {
-        sizeC = sizeC.plus( new $.Point( 1, 1 ) );
-    }
 
     if (tile.isRightMost && tiledImage.wrapHorizontal) {
         sizeC.x += 0.75; // Otherwise Firefox and Safari show seams

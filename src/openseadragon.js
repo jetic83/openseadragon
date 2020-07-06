@@ -639,6 +639,33 @@
   * @property {Object} [ajaxHeaders={}]
   *     A set of headers to include when making AJAX requests for tile sources or tiles.
   *
+  * @property {Boolean} [loadTilesWithSignalR=false]
+  *     Whether to load tile data using SignalR (WebSockets with fallback).
+  *     See {@link https://docs.microsoft.com/en-us/aspnet/signalr/} for SignalR documentation.
+  *     Note that this can be overridden at the {@link OpenSeadragon.TileSource} level.
+  *     IMPORTANT: If SignalR is used, you need javascript references in your code for
+  *       1. jquery-3.1.1.min.js (or higher)
+  *       2. jquery.signalR-2.2.1.min.js (or higher)
+  *       3. signalr/hubs (see documentation above)
+  *       Then your OSD code (in this order).
+  *
+  * @property {String|Object} [signalRHub='oSDHub']
+  *     If loadTilesWithSignalR is set, this is an optional SignalR hub proxy which is used to load the tiles.
+  *     Values can be
+  *       (i)  a predefined SignalR hub object (most flexible), or
+  *       (ii) a string with the camelCased hub class name (default 'oSDHub') with which a basic SignalR hub proxy is set up.
+  *     For (ii), logging will be enabled when debugMode is set.
+  *     In both cases, the server's hub class has to implement the function 'getTile(string url)'. The url is the image
+  *     url queried by OSD from the server. The return value must be a structure with
+  *       a property 'Base64' (the base64 encoded image string) and
+  *       a property 'Mime' (the image mime type string, e.g. 'image/png' or 'image/jpeg').
+  *
+  * @property {Boolean} [loadTilesWithMultiServers=false]
+  *     Whether to load tile data using multiple servers to balance the loading.
+  *
+  * @property {Object} [multiServers={}]
+  *     A list of servers that can be used to balance the tile loading.
+  *
   */
 
  /**
@@ -1059,6 +1086,10 @@ function OpenSeadragon( options ){
             ajaxWithCredentials:    false,
             loadTilesWithAjax:      false,
             ajaxHeaders:            {},
+            loadTilesWithSignalR:   false,
+            signalRHub:             'oSDHub',
+            loadTilesWithMultiServers:      false,
+            multiServers:           [""],
 
             //PAN AND ZOOM SETTINGS AND CONSTRAINTS
             panHorizontal:          true,

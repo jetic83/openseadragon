@@ -47,13 +47,17 @@
  * @param {String} url The URL of this tile's image.
  * @param {CanvasRenderingContext2D} context2D The context2D of this tile if it
  * is provided directly by the tile source.
+ * @param {Boolean} loadWithSignalR Whether to load this tile with SignalR.
+ * @param {String|Object} signalRHub Hub (or name of hub) to use when loading the image with SignalR.
  * @param {Boolean} loadWithAjax Whether this tile image should be loaded with an AJAX request .
  * @param {Object} ajaxHeaders The headers to send with this tile's AJAX request (if applicable).
+ * @param {Boolean} loadWithMultiServers Whether this tile image should be loaded with a balanced server (one of multiServers).
+ * @param {Object} multiServers A list of servers where the tiles are balanced to (if applicable).
  * @param {OpenSeadragon.Rect} sourceBounds The portion of the tile to use as the source of the
  * drawing operation, in pixels. Note that this only works when drawing with canvas; when drawing
  * with HTML the entire tile is always used.
  */
-$.Tile = function(level, x, y, bounds, exists, url, context2D, loadWithAjax, ajaxHeaders, sourceBounds) {
+ $.Tile = function (level, x, y, bounds, exists, url, context2D, loadWithSignalR, signalRHub, loadWithAjax, ajaxHeaders, loadWithMultiServers, multiServers, sourceBounds) {
     /**
      * The zoom level this tile belongs to.
      * @member {Number} level
@@ -104,6 +108,19 @@ $.Tile = function(level, x, y, bounds, exists, url, context2D, loadWithAjax, aja
      */
     this.context2D = context2D;
     /**
+     * Whether to load this tile's image with SignalR.
+     * @member {Boolean} loadWithSignalR
+     * @memberof OpenSeadragon.Tile#
+     */
+    this.loadWithSignalR = loadWithSignalR;
+    /**
+     * The SignalR Hub to be used in requesting this tile's image.
+     * Only used if loadWithSignalR is set to true.
+     * @member {String|Object} signalRHub
+     * @memberof OpenSeadragon.Tile#
+     */
+    this.signalRHub = signalRHub;
+    /**
      * Whether to load this tile's image with an AJAX request.
      * @member {Boolean} loadWithAjax
      * @memberof OpenSeadragon.Tile#
@@ -116,6 +133,19 @@ $.Tile = function(level, x, y, bounds, exists, url, context2D, loadWithAjax, aja
      * @memberof OpenSeadragon.Tile#
      */
     this.ajaxHeaders = ajaxHeaders;
+    /**
+     * Whether to load this tile's image with a balanced server (one of multiServers).
+     * @member {Boolean} loadWithMultiServers
+     * @memberof OpenSeadragon.Tile#
+     */
+    this.loadWithMultiServers = loadWithMultiServers;
+    /**
+     * The list of servers to be used in requesting this tile's image.
+     * Only used if loadWithMultiServers is set to true.
+     * @member {Object} multiServers
+     * @memberof OpenSeadragon.Tile#
+     */
+    this.multiServers = multiServers;
     /**
      * The unique cache key for this tile.
      * @member {String} cacheKey
@@ -347,6 +377,16 @@ $.Tile.prototype = {
             // shift tile position slightly
             position = position.plus(translate);
         }
+
+        // Ensure that we are drawing the tile at exact pixel boundaries. Otherwise, on Firefox, Safari and Edge 44,
+        // seams between tiles appear as thin white lines.
+        var bottomRight = position.plus(size);
+        bottomRight.x = Math.floor(bottomRight.x);
+        bottomRight.y = Math.floor(bottomRight.y);
+        position.x = Math.floor(position.x);
+        position.y = Math.floor(position.y);
+        size.x = bottomRight.x - position.x;
+        size.y = bottomRight.y - position.y;
 
         //if we are supposed to be rendering fully opaque rectangle,
         //ie its done fading or fading is turned off, and if we are drawing
