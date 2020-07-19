@@ -5,6 +5,7 @@
  *
  * Copyright (C) 2009 CodePlex Foundation
  * Copyright (C) 2010-2013 OpenSeadragon contributors
+ * Copyright (C) 2018-2019 Peter J. Schueffler
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -148,6 +149,7 @@ $.extend( $.FlexTileSource.prototype, $.TileSource.prototype, /** @lends OpenSea
         if (url && !options.tilesUrl) {
             options.tilesUrl = url.replace(
                 /([^/]+?)(\.(flex|xml|js)?(\?[^/]*)?)?\/?$/, '$1_files/');
+
             if (url.search(/\.(flex|xml|js)\?/) !== -1) {
                 options.queryParams = url.match(/\?.*/);
             } else {
@@ -194,6 +196,17 @@ $.extend( $.FlexTileSource.prototype, $.TileSource.prototype, /** @lends OpenSea
                 this.levels[ this.maxLevel ].width;
         }
         return levelScale;
+    },
+
+    /**
+     * @function
+     * @param {Number} level
+     */
+    getNumTiles: function( level ) {
+        var x = Math.ceil( this.levels[level].width / this.getTileWidth(level) ),
+            y = Math.ceil( this.levels[level].height / this.getTileHeight(level) );
+
+        return new $.Point( x, y );
     },
 
     /**
