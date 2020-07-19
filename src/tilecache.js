@@ -49,6 +49,7 @@ var ImageRecord = function(options) {
     $.console.assert( options.image, "[ImageRecord] options.image is required" );
     this._image = options.image;
     this._tiles = [];
+    this._iOSDevice = options.iOSDevice;
 };
 
 ImageRecord.prototype = {
@@ -56,6 +57,7 @@ ImageRecord.prototype = {
         this._image = null;
         this._renderedContext = null;
         this._tiles = null;
+        this._iOSDevice = null;
     },
 
     getImage: function() {
@@ -67,8 +69,24 @@ ImageRecord.prototype = {
             var canvas = document.createElement( 'canvas' );
             canvas.width = this._image.width;
             canvas.height = this._image.height;
-            this._renderedContext = canvas.getContext('2d');
-            this._renderedContext.drawImage( this._image, 0, 0 );
+            //Author: Bhavana Mallineni
+            //Try to reduce the canvas size for the iOS device if the memory canvas exceeds limit in iOS device
+            var canvasArea = canvas.width * canvas.height;
+            if (this._iOSDevice && canvasArea >= 5242880) {
+                // divide the original size with the limit and get the square root
+                var resizeRatio = Math.sqrt(canvasArea / 5242880);
+                // divide height and width with the divisor to get the new lengths
+                // these two multiplied will make exactly 5,242,880
+                canvas.height = Math.floor(canvas.height / resizeRatio);
+                canvas.width = Math.floor(canvas.width / resizeRatio);
+            }
+            //To avoid the iPad freeze when the total memory canvas exceeds the maximum limit (576MB),
+            //donot render when the canvas exceeds the limit and if device is iOS.
+            //Render the canvas and draw image if the device is not iOS
+            if (!this._iOSDevice || canvasArea < 5242880) {
+               this._renderedContext = canvas.getContext('2d');
+               this._renderedContext.drawImage(this._image, 0, 0);
+            }
             //since we are caching the prerendered image on a canvas
             //allow the image to not be held in memory
             this._image = null;
@@ -120,6 +138,7 @@ $.TileCache = function( options ) {
     this._tilesLoaded = [];
     this._imagesLoaded = [];
     this._imagesLoadedCount = 0;
+    this._iOSDevice = options.iOSDevice || $.DEFAULT_SETTINGS.iOSDevice;
 };
 
 /** @lends OpenSeadragon.TileCache.prototype */
@@ -160,7 +179,8 @@ $.TileCache.prototype = {
         if (!imageRecord) {
             $.console.assert( options.image, "[TileCache.cacheTile] options.image is required to create an ImageRecord" );
             imageRecord = this._imagesLoaded[options.tile.cacheKey] = new ImageRecord({
-                image: options.image
+                image: options.image,
+                iOSDevice: this._iOSDevice
             });
 
             this._imagesLoadedCount++;

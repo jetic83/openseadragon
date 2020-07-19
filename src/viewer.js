@@ -390,7 +390,8 @@ $.Viewer = function( options ) {
 
     // Create the tile cache
     this.tileCache = new $.TileCache({
-        maxImageCacheCount: this.maxImageCacheCount
+        maxImageCacheCount: this.maxImageCacheCount,
+        iOSDevice: this.iOSDevice
     });
 
     // Create the drawer

@@ -239,6 +239,26 @@ $.Point.prototype = {
      */
     toString: function() {
         return "(" + (Math.round(this.x * 100) / 100) + "," + (Math.round(this.y * 100) / 100) + ")";
+    },
+
+    /**
+     * Aligns this point on a grid of the given precision.
+     * @function
+     * @param {Number} [unit=1] Unit of the grid.
+     * @returns {OpenSeadragon.Point} The aligned point.
+     */
+    align: function(unit) {
+        unit = unit === null || unit === undefined ? 1 : unit;
+        var EPSILON = 1e-10;
+
+        // Avoid float precision errors by setting a lower limit to the precision of our coordinates.
+        var x = Math.round(this.x / EPSILON) * EPSILON;
+        var y = Math.round(this.y / EPSILON) * EPSILON;
+
+        x = Math.round(x / unit ) * unit;
+        y = Math.round(y / unit ) * unit;
+
+        return new $.Point(x, y);
     }
 };
 

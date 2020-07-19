@@ -39,14 +39,13 @@
  * @class ImageJob
  * @classdesc Handles downloading of a single image.
  * @param {Object} options - Options for this ImageJob.
- * @param {Object} [options.tiledImage] - The parent tiled image.
  * @param {String} [options.src] - URL of image to download.
  * @param {Boolean} [options.loadWithSignalR] - Whether to load this image with SignalR.
  * @param {String|Object} [options.signalRHub] - Hub (or name of a hub) to use when loading the image with SignalR.
  * @param {String} [options.loadWithAjax] - Whether to load this image with AJAX.
  * @param {String} [options.ajaxHeaders] - Headers to add to the image request if using AJAX.
  * @param {Boolean} [options.loadWithMultiServers] - Whether to load this image with multiple servers to balance the tile loading.
- * @param {Object} [options.multiServers] - Servers to load the image if using multiple Servers.
+ * @param {Object} [options.multiServers] - String array with servers to load the image if using multiple Servers. Should be one, two or four servers. Use empty string for current server.
  * @param {String} [options.crossOriginPolicy] - CORS policy to use for downloads
  * @param {Function} [options.callback] - Called once image has been downloaded.
  * @param {Function} [options.abort] - Called when this image job is aborted.
@@ -223,22 +222,35 @@ ImageJob.prototype = {
             if (this.src.indexOf("labels_") !== -1 || this.src.indexOf("predictions_") !== -1) {
                 this.image.src = this.src;
             } else {
-                // devide the loading load to three servers
-                var coords = this.src.split('/').slice(-1)[0].split('\\.')[0].split('_');
+
+                // devide the loading load to four servers
+                var coords = this.src.split('/').slice(-1)[0].split('.')[0].split('_');
                 var col = parseInt(coords[0], 10);
                 var row = parseInt(coords[1], 10);
 
-                if (col % 2 === 0) {
+                if (!this.multiServers || this.multiServers === null || this.multiServers.length < 1) {
+                    this.image.src = this.src;
+                } else if (this.multiServers.length < 2) {
+                    this.image.src = this.multiServers[0] + this.src;
+                } else if (this.multiServers.length < 4) {
                     if (row % 2 === 0) {
                         this.image.src = this.multiServers[0] + this.src;
                     } else {
                         this.image.src = this.multiServers[1] + this.src;
                     }
                 } else {
-                    if (row % 2 === 0) {
-                        this.image.src = this.multiServers[2] + this.src;
+                    if (col % 2 === 0) {
+                        if (row % 2 === 0) {
+                            this.image.src = this.multiServers[0] + this.src;
+                        } else {
+                            this.image.src = this.multiServers[1] + this.src;
+                        }
                     } else {
-                        this.image.src = this.multiServers[3] + this.src;
+                        if (row % 2 === 0) {
+                            this.image.src = this.multiServers[2] + this.src;
+                        } else {
+                            this.image.src = this.multiServers[3] + this.src;
+                        }
                     }
                 }
             }
@@ -294,7 +306,6 @@ $.ImageLoader.prototype = {
      * Add an unloaded image to the loader queue.
      * @method
      * @param {Object} options - Options for this job.
-     * @param {Object} [options.tiledImage] - The parent tiled image.
      * @param {String} [options.src] - URL of image to download.
      * @param {Boolean} [options.loadWithSignalR] - Whether to load this image with SignalR.
      * @param {String|Object} [options.signalRHub] - Hub (or name of a hub) to use when loading the image with SignalR.
@@ -314,7 +325,6 @@ $.ImageLoader.prototype = {
                 completeJob(_this, job, options.callback);
             },
             jobOptions = {
-                tiledImage: options.tiledImage,
                 src: options.src,
                 loadWithSignalR: options.loadWithSignalR,
                 signalRHub: options.loadWithSignalR ? options.signalRHub : null,
@@ -324,6 +334,7 @@ $.ImageLoader.prototype = {
                 multiServers: options.multiServers ? options.multiServers : null,
                 crossOriginPolicy: options.crossOriginPolicy,
                 ajaxWithCredentials: options.ajaxWithCredentials,
+                tiledImage: options.tiledImage,
                 callback: complete,
                 abort: options.abort,
                 timeout: this.timeout

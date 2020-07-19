@@ -91,7 +91,7 @@
  *      Whether to load tile data using multiple servers.
  *      Defaults to the setting in {@link OpenSeadragon.Options}.
  * @param {Object} [options.multiServers=[]]
- *      A set of servers to include when balancing tile loading.
+ *      A set of strings of server names to include when balancing tile loading. Should be one, two or four servers. Use empty string for current server.
  */
 $.TiledImage = function( options ) {
     var _this = this;
@@ -1554,7 +1554,6 @@ function getTile(
 function loadTile( tiledImage, tile, time ) {
     tile.loading = true;
     tiledImage._imageLoader.addJob({
-        tiledImage: tiledImage,
         src: tile.url,
         loadWithSignalR: tile.loadWithSignalR,
         signalRHub: tile.signalRHub,
@@ -1564,6 +1563,7 @@ function loadTile( tiledImage, tile, time ) {
         multiServers: tile.multiServers,
         crossOriginPolicy: tiledImage.crossOriginPolicy,
         ajaxWithCredentials: tiledImage.ajaxWithCredentials,
+        tiledImage: tiledImage,
         callback: function( image, errorMsg, tileRequest ){
             onTileLoad( tiledImage, tile, time, image, errorMsg, tileRequest );
         },

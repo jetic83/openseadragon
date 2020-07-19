@@ -663,8 +663,8 @@
   * @property {Boolean} [loadTilesWithMultiServers=false]
   *     Whether to load tile data using multiple servers to balance the loading.
   *
-  * @property {Object} [multiServers={}]
-  *     A list of servers that can be used to balance the tile loading.
+  * @property {Object} [multiServers=[]]
+  *     A set of strings of server names to include when balancing tile loading. Should be one, two or four servers. Use empty string for current server.
   *
   */
 

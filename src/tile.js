@@ -380,13 +380,9 @@ $.Tile.prototype = {
 
         // Ensure that we are drawing the tile at exact pixel boundaries. Otherwise, on Firefox, Safari and Edge 44,
         // seams between tiles appear as thin white lines.
-        var bottomRight = position.plus(size);
-        bottomRight.x = Math.floor(bottomRight.x);
-        bottomRight.y = Math.floor(bottomRight.y);
-        position.x = Math.floor(position.x);
-        position.y = Math.floor(position.y);
-        size.x = bottomRight.x - position.x;
-        size.y = bottomRight.y - position.y;
+        var bottomRight = position.plus(size).align();
+        position = position.align();
+        size = bottomRight.minus(position);
 
         //if we are supposed to be rendering fully opaque rectangle,
         //ie its done fading or fading is turned off, and if we are drawing
