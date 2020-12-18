@@ -1108,7 +1108,7 @@ $.extend($.TiledImage.prototype, $.EventSource.prototype, /** @lends OpenSeadrag
             ).x * this._scaleSpring.current.value;
 
             if (level === lowestLevel ||
-                (!haveDrawn && currentRenderPixelRatio >= this.minPixelRatio)) {
+                (!haveDrawn && currentRenderPixelRatio > this.minPixelRatio)) {
                 drawLevel = true;
                 haveDrawn = true;
             } else if (!haveDrawn) {
